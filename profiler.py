@@ -74,5 +74,7 @@ class Profiler():
         report_df['delta_mem'] =  report_df['used_mem']- report_df.loc['begin','used_mem']
 
         report_df.loc['total'] = [self.gpu_mem()[1],0,end_time-start_time]
+        report_df['delta_time'] = report_df['delta_time'].map(lambda t : round(t,3))
+        
         return report_df
         
