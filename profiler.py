@@ -32,11 +32,13 @@ class Profiler():
         ids = batch['input_ids'].to(device,dtype=torch.long)
         labels = batch['labels'].to(device,dtype=torch.long)
         
+        torch.cuda.synchronize()
         start_time = time.time()
 
         outputs = model(input_ids = ids,labels = labels)
         loss = outputs[0]
 
+        torch.cuda.synchronize()
         forward_time = time.time()
         delta_time.append(-start_time + forward_time)
 
@@ -46,6 +48,7 @@ class Profiler():
             optimizer.zero_grad()
             loss.backward()
 
+            torch.cuda.synchronize()
             backward_time = time.time()
             delta_time.append(-forward_time + backward_time)
             used_mem.append( self.gpu_mem()[0])
@@ -53,7 +56,8 @@ class Profiler():
 
             optimizer.step()
 
-            optimizer_step_time = self.time.time()
+            torch.cuda.synchronize()
+            optimizer_step_time = time.time()
             delta_time.append(-backward_time + optimizer_step_time)
             used_mem.append( self.gpu_mem()[0])
             self.gpu_mem_info(f'{delta_time[-1]:.3f}s optimizer_step')
@@ -63,6 +67,7 @@ class Profiler():
 
         torch.cuda.empty_cache() 
         used_mem.append( self.gpu_mem()[0])
+        torch.cuda.synchronize()
         end_time = time.time()
         delta_time.append(end_time - optimizer_step_time)
         # 
