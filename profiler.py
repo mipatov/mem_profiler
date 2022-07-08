@@ -18,7 +18,7 @@ class Profiler():
         used,total = self.gpu_mem()
         print(f'{title} gpu mem : {used:.1f}/{total:.1f} mb')
 
-    def one_step_report(self,batch, model, optimizer, do_backward = True,device = torch.device('cpu'),print_loss = False):
+    def one_step_report(self,batch, model, optimizer, do_backward = True,device = torch.device('cpu'),print_loss = False,deepspeed = False):
     
         report_df = pd.DataFrame(columns=['used_mem','delta_mem','delta_time'])
 
@@ -46,7 +46,10 @@ class Profiler():
         self.gpu_mem_info(f'{delta_time[-1]:.3f}s forward')
         if do_backward:
             optimizer.zero_grad()
-            loss.backward()
+            if deepspeed:
+                model.backward(loss)
+            else:
+                loss.backward()
 
             torch.cuda.synchronize()
             backward_time = time.time()
@@ -54,7 +57,10 @@ class Profiler():
             used_mem.append( self.gpu_mem()[0])
             self.gpu_mem_info(f'{delta_time[-1]:.3f}s backward')
 
-            optimizer.step()
+            if deepspeed:
+                model.step()
+            else:
+                optimizer.step()
 
             torch.cuda.synchronize()
             optimizer_step_time = time.time()
